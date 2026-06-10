@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./node_modules/@prisma/marketplace-client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  VENDOR
+  BUYER
+  ADMIN
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SOLD
+  ARCHIVED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentState {
+  PENDING_PAYMENT
+  PAID
+  REFUNDED
+}
+
+enum FulfillmentState {
+  UNFULFILLED
+  PROCESSING
+  FULFILLED
+  RETURNED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(BUYER)
+  image     String?
+  suspended Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Extended profile fields
+  bio         String?
+  avatarUrl   String?
+  location    String?
+  socialLinks Json?
+
+  // Relations
+  listings          Listing[]
+  moderatedListings Listing[]        @relation("ModeratedListings")
+  reviews           Review[]
+  bookings          Booking[]
+  orders            Order[]
+  vendorOrders      Order[]          @relation("VendorOrders")
+  metrics           VendorMetrics?
+  wishlist          WishlistItem[]
+  notifications     Notification[]
+  conversationsA    Conversation[]   @relation("ConvA")
+  conversationsB    Conversation[]   @relation("ConvB")
+  messagesSent      Message[]
+  accounts          Account[]
+  sessions          Session[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  icon     String?
+  coverUrl String?
+  listings Listing[]
+}
+
+model Listing {
+  id            String        @id @default(cuid())
+  title         String
+  slug          String        @unique
+  description   String
+  price         Int
+  status        ListingStatus @default(DRAFT)
+  moderatedAt   DateTime?
+  moderatedById String?
+  moderatedBy   User?         @relation("ModeratedListings", fields: [moderatedById], references: [id])
+  vendorId      String
+  vendor        User          @relation(fields: [vendorId], references: [id])
+  categoryId    String
+  category      Category      @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Extended fields
+  isService       Boolean   @default(false)
+  bookingDuration Int?
+  stock           Int       @default(1)
+  isFlashSale     Boolean   @default(false)
+  flashSalePrice  Int?
+  flashSaleEnds   DateTime?
+
+  images    ListingImage[]
+  reviews   Review[]
+  bookings  Booking[]
+  wishlist  WishlistItem[]
+  bundleItems BundleItem[]
+  variants    ListingVariant[]
+
+  @@index([vendorId])
+  @@index([status, categoryId])
+  @@index([status, price])
+  @@index([status, createdAt])
+  @@index([vendorId, stock])
+}
+
+model ListingImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Bundle {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  discountPct Int      @default(10)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  items       BundleItem[]
+}
+
+model BundleItem {
+  id        String  @id @default(cuid())
+  bundleId  String
+  bundle    Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleId, listingId])
+}
+
+model ListingVariant {
+  id        String  @id @default(cuid())
+  listingId String
+  label     String
+  priceAdj  Int     @default(0)
+  stock     Int     @default(1)
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  text      String
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, authorId])
+  @@index([listingId, rating])
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  date      DateTime
+  message   String?
+  status    BookingStatus @default(PENDING)
+  listingId String
+  listing   Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId   String
+  buyer     User          @relation(fields: [buyerId], references: [id])
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model VendorMetrics {
+  vendor       User     @relation(fields: [vendorId], references: [id])
+  vendorId     String   @id
+  listingCount Int      @default(0)
+  orderCount   Int      @default(0)
+  reviewCount  Int      @default(0)
+  totalRevenue Int      @default(0)
+  averageRating Float   @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model Order {
+  id               String           @id @default(cuid())
+  orderNumber      String           @unique
+  total            Int
+  currency         String           @default("php")
+  paymentState     PaymentState     @default(PENDING_PAYMENT)
+  fulfillmentState FulfillmentState @default(UNFULFILLED)
+  buyerId          String
+  buyer            User             @relation(fields: [buyerId], references: [id])
+  vendorId         String
+  vendor           User             @relation("VendorOrders", fields: [vendorId], references: [id])
+  email            String?
+  name             String?
+  address          String?
+  createdAt        DateTime         @default(now())
+
+  items OrderItem[]
+
+  @@index([vendorId])
+  @@index([vendorId, paymentState])
+  @@index([vendorId, createdAt])
+}
+
+model OrderItem {
+  id              String @id @default(cuid())
+  orderId         String
+  order           Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listingId       String
+  productName     String
+  priceAtPurchase Int
+  quantity        Int
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  kind      String   // "percent" or "fixed"
+  value     Int      // percent (e.g. 10) or fixed cents (e.g. 20000)
+  label     String
+  maxUses   Int      @default(0)
+  useCount  Int      @default(0)
+  active    Boolean  @default(true)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+// NextAuth models — required by PrismaAdapter for OAuth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+}
+
+model Conversation {
+  id             String    @id @default(cuid())
+  participantAId String
+  participantBId String
+  participantA   User      @relation("ConvA", fields: [participantAId], references: [id])
+  participantB   User      @relation("ConvB", fields: [participantBId], references: [id])
+  listingId      String?
+  messages       Message[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([participantAId, participantBId, listingId])
+  @@index([participantAId])
+  @@index([participantBId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, senderId, isRead])
+}

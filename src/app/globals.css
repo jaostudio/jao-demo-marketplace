@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+html, body { overflow-x: hidden; width: 100%; }
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../../packages/ui/src/**/*.tsx";
+
+/* =========================================================
+   PALENGKEE — Brand tokens
+   Market Orange primary, Leafy Green secondary, Neutral Brown warm neutral
+   ========================================================= */
+
+@theme {
+  --color-primary-50: #FFF4ED;
+  --color-primary-100: #FFE8D0;
+  --color-primary-200: #FFD0A0;
+  --color-primary-300: #FFB06B;
+  --color-primary-400: #FF9842;
+  --color-primary-500: #FF8C42;
+  --color-primary-600: #E87A38;
+  --color-primary-700: #C45F2A;
+  --color-primary-800: #98451E;
+  --color-primary-900: #733317;
+
+  --color-secondary-50: #E8F5E9;
+  --color-secondary-100: #C8E6C9;
+  --color-secondary-200: #A5D6A7;
+  --color-secondary-300: #81C784;
+  --color-secondary-400: #66BB6A;
+  --color-secondary-500: #2E7D32;
+  --color-secondary-600: #27682A;
+  --color-secondary-700: #1B4D1E;
+  --color-secondary-800: #123514;
+  --color-secondary-900: #091E0A;
+
+  --color-accent-50: #F5EFE8;
+  --color-accent-100: #E8DCC8;
+  --color-accent-200: #D0C0A0;
+  --color-accent-300: #B8A078;
+  --color-accent-400: #A08858;
+  --color-accent-500: #8B5A2B;
+  --color-accent-600: #734822;
+  --color-accent-700: #58361A;
+  --color-accent-800: #3E2611;
+  --color-accent-900: #261708;
+
+  --color-neutral-50: #F8F6F2;
+  --color-neutral-100: #EEE8DD;
+  --color-neutral-200: #DCD2C4;
+  --color-neutral-300: #C4B8A8;
+  --color-neutral-400: #9E9080;
+  --color-neutral-500: #7A6E60;
+  --color-neutral-600: #5E544A;
+  --color-neutral-700: #484038;
+  --color-neutral-800: #363028;
+  --color-neutral-900: #24201C;
+  --color-neutral-950: #12100E;
+
+  /* Keep brand alias for backward compat */
+  --color-brand-50: var(--color-primary-50);
+  --color-brand-100: var(--color-primary-100);
+  --color-brand-200: var(--color-primary-200);
+  --color-brand-300: var(--color-primary-300);
+  --color-brand-400: var(--color-primary-400);
+  --color-brand-500: var(--color-primary-500);
+  --color-brand-600: var(--color-primary-600);
+  --color-brand-700: var(--color-primary-700);
+  --color-brand-800: var(--color-primary-800);
+  --color-brand-900: var(--color-primary-900);
+
+  /* Tailwind v4 tree-shake bypass — keep CSS vars in output */
+  --color-primary-500-hex: #FF8C42;
+  --color-primary-600-hex: #E87A38;
+  --color-secondary-500-hex: #2E7D32;
+  --color-secondary-600-hex: #27682A;
+  --color-accent-500-hex: #8B5A2B;
+  --color-accent-600-hex: #734822;
+}
+
+/* =========================================================
+   Root variables — light mode (default)
+   ========================================================= */
+
+:root {
+  --shadow-warm-sm: 0 1px 2px 0 rgba(255, 140, 66, 0.08);
+  --shadow-warm-md: 0 4px 6px -1px rgba(255, 140, 66, 0.12), 0 2px 4px -1px rgba(255, 140, 66, 0.07);
+  --shadow-warm-lg: 0 10px 15px -3px rgba(255, 140, 66, 0.12), 0 4px 6px -2px rgba(255, 140, 66, 0.06);
+  --shadow-warm-xl: 0 20px 25px -5px rgba(255, 140, 66, 0.12), 0 10px 10px -5px rgba(255, 140, 66, 0.05);
+}
+
+/* =========================================================
+   Base layer
+   ========================================================= */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-neutral-50 text-neutral-800;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  .dark body {
+    @apply bg-neutral-950 text-neutral-100;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-neutral-800;
+  }
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    @apply text-neutral-100;
+  }
+
+  /* Warm-tinted focus rings */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-500;
+  }
+}
+
+/* =========================================================
+   Utility helpers
+   ========================================================= */
+
+@layer utilities {
+  .shadow-warm-sm {
+    box-shadow: var(--shadow-warm-sm);
+  }
+  .shadow-warm-md {
+    box-shadow: var(--shadow-warm-md);
+  }
+  .shadow-warm-lg {
+    box-shadow: var(--shadow-warm-lg);
+  }
+  .shadow-warm-xl {
+    box-shadow: var(--shadow-warm-xl);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+/* Reduced motion — disable all animations/transitions when user prefers it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
